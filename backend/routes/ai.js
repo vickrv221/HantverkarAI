@@ -65,12 +65,29 @@ router.post('/generate', async (req, res) => {
     return res.status(400).json({ error: 'input och workType krävs' });
   }
 
-  const prompt = `Skriv en professionell arbetsbeskrivning för ett ${workType}-jobb. Kundens input: "${input}".`;
+  const prompt = `Skriv en arbetsbeskrivning för en offert. Arbetet gäller kategorin "${workType}" och ska baseras på följande kundinformation: "${input}". 
+
+Texten ska:
+- Vara skriven från företagets perspektiv till kunden
+- Inte vara formulerad som en platsannons eller innehålla fraser som "vi söker", "du ska", "CV", "ansökan"
+- Inte rikta sig till arbetssökande
+- Ha professionell och tydlig ton
+- Vara skriven på svenska
+- Inkludera en kort beskrivning av arbetets omfattning, uppskattad tidsåtgång och de huvudsakliga arbetsmomenten`;
 
   try {
     const response = await openai.chat.completions.create({
-      model: 'gpt-3.5-turbo',
-      messages: [{ role: 'user', content: prompt }]
+      model: 'gpt-4-turbo',
+      messages: [
+        {
+          role: 'system',
+          content: 'Du är ett byggföretag som skriver arbetsbeskrivningar i offerter riktade till kunder. Du får aldrig skriva platsannonser eller texter riktade till arbetssökande.'
+        },
+        {
+          role: 'user',
+          content: prompt
+        }
+      ]
     });
 
     const description = response.choices?.[0]?.message?.content?.trim();
@@ -86,6 +103,7 @@ router.post('/generate', async (req, res) => {
     res.status(500).json({ error: 'AI Service Error' });
   }
 });
+
 
 // POST /api/ai/materials
 router.post('/materials', async (req, res) => {
