@@ -6,28 +6,36 @@ const Login = ({ onLogin }) => {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
+    console.log('Försöker logga in med:', formData);
+    console.log('Skickar data:', JSON.stringify(formData, null, 2)); // NY DEBUG
+    
     if (!formData.email || !formData.password) {
       alert('Fyll i både e-post och lösenord!');
       return;
     }
+    
     try {
       const response = await fetch('http://localhost:5000/api/auth/login', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(formData)
       });
+      
+      console.log('Response status:', response.status);
       const data = await response.json();
+      console.log('Response data:', JSON.stringify(data, null, 2)); // ÄNDRAD DEBUG
+      
       if (response.ok && data.token) {
         onLogin(data.token);
       } else {
         alert(data.message || 'Inloggning misslyckades. Kontrollera e-post och lösenord.');
       }
     } catch (error) {
-      console.error('Error:', error);
-      alert('Tekniskt fel vid inloggning');
+      console.error('Login error:', error);
+      alert('Tekniskt fel vid inloggning. Försök igen senare.');
     }
   };
-
+  
   return (
     <form onSubmit={handleSubmit} className="login-form">
       <h2>Logga in</h2>

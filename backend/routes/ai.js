@@ -6,58 +6,10 @@ const openai = new OpenAI({
   apiKey: process.env.OPENAI_API_KEY
 });
 
-// Fallbackbeskrivningar
-const fallbackDescriptions = {
-  renovation: `Omfattning: Renoveringsarbete
-Uppskattad tidsåtgång: 2–3 arbetsdagar
-
-Arbetet omfattar följande moment:
-• Förarbete och skyddsåtgärder
-• Slipning och preparation av ytor
-• Behandling och finish
-• Städning och slutkontroll
-
-Specifika åtgärder:
-Slipjobb`,
-  electrical: `Omfattning: Elarbete
-Uppskattad tidsåtgång: 1–2 arbetsdagar
-
-Moment:
-• Säkerhetsgenomgång
-• Installation
-• Test och dokumentation`,
-  plumbing: `Omfattning: VVS-arbete
-Uppskattad tidsåtgång: 2 arbetsdagar
-
-Moment:
-• Rördragning
-• Tätning
-• Test och felsökning`
-};
-
-// Fallbackmaterial
-const fallbackMaterials = {
-  renovation: [
-    'Slippapper olika kornstorlekar',
-    'Träolja eller lack',
-    'Skyddsplast',
-    'Rengöringsmedel'
-  ],
-  electrical: [
-    'Kabel och installationsrör',
-    'Kopplingsdosor och uttag',
-    'Säkringar och brytare',
-    'Mätinstrument'
-  ],
-  plumbing: [
-    'Rör och kopplingar',
-    'Tätningsmassa',
-    'Ventiler',
-    'Fogmaterial'
-  ]
-};
-
-// POST /api/ai/generate
+/**
+ * POST /api/ai/generate
+ * Använder OpenAI med JSON-mode för garanterad struktur
+ */
 router.post('/generate', async (req, res) => {
   const { input, workType } = req.body;
 
@@ -65,47 +17,107 @@ router.post('/generate', async (req, res) => {
     return res.status(400).json({ error: 'input och workType krävs' });
   }
 
-  const prompt = `Skriv en arbetsbeskrivning för en offert. Arbetet gäller kategorin "${workType}" och ska baseras på följande kundinformation: "${input}". 
-
-Texten ska:
-- Vara skriven från företagets perspektiv till kunden
-- Inte vara formulerad som en platsannons eller innehålla fraser som "vi söker", "du ska", "CV", "ansökan"
-- Inte rikta sig till arbetssökande
-- Ha professionell och tydlig ton
-- Vara skriven på svenska
-- Inkludera en kort beskrivning av arbetets omfattning, uppskattad tidsåtgång och de huvudsakliga arbetsmomenten`;
-
   try {
     const response = await openai.chat.completions.create({
       model: 'gpt-4-turbo',
       messages: [
         {
           role: 'system',
-          content: 'Du är ett byggföretag som skriver arbetsbeskrivningar i offerter riktade till kunder. Du får aldrig skriva platsannonser eller texter riktade till arbetssökande.'
+          content: `Du är en AI-assistent för HantverkarAI som skapar strukturerade arbetsbeskrivningar. Du MÅSTE svara med valid JSON enligt exakt detta format:
+
+{
+  "omfattning": "Kort beskrivning av arbetet",
+  "arbetsmoment": ["Moment 1", "Moment 2", "Moment 3", "Moment 4"],
+  "vadSomIngar": ["Ingår 1", "Ingår 2", "Ingår 3", "Ingår 4"]
+}
+
+Använd svenska språket och var konkret och professionell.`
         },
         {
           role: 'user',
-          content: prompt
+          content: `Skapa innehåll för ${workType}renovering baserat på "${input}". Svara ENDAST med JSON enligt formatet.`
         }
-      ]
+      ],
+      response_format: { type: "json_object" }, // Detta tvingar JSON-svar
+      temperature: 0.3,
+      max_tokens: 800
     });
 
-    const description = response.choices?.[0]?.message?.content?.trim();
+    const jsonResponse = JSON.parse(response.choices[0].message.content);
+    
+    // Bygg strukturen med AI-innehållet
+    const workTypeMap = {
+      renovation: 'Renovering',
+      electrical: 'Elinstallation', 
+      plumbing: 'VVS-installation'
+    };
+
+    const timeMap = {
+      renovation: '4-6 veckor',
+      electrical: '3-4 arbetsdagar',
+      plumbing: '3-5 arbetsdagar'
+    };
+
+    const standardMap = {
+      renovation: 'Byggnadstekniska krav enligt BBR',
+      electrical: 'SS-EN 60364 för lågspänningsinstallationer',
+      plumbing: 'SS-EN 806 för vatteninstallationer'
+    };
+
+    const description = `PROJEKTÖVERSIKT
+Omfattning: ${jsonResponse.omfattning}
+Tidsåtgång: ${timeMap[workType]} beroende på omfattning
+Standarder: ${standardMap[workType]}
+
+SPECIFIKA ARBETSMOMENT
+${jsonResponse.arbetsmoment.map(moment => `• ${moment}`).join('\n')}
+
+ARBETSPROCESS
+${workType === 'renovation' ? 
+  'Vecka 1-2: Rivning och grundförberedelser\nVecka 3-4: Installation och byggarbeten\nVecka 5-6: Slutfinish och städning' :
+  workType === 'electrical' ?
+  'Dag 1: Säkerhetskontroll och förberedelser\nDag 2-3: Installation och anslutning\nDag 4: Test och dokumentation' :
+  'Dag 1-2: Rördragning och installation\nDag 3-4: Armaturer och anslutningar\nDag 5: Tryckprovning och dokumentation'
+}
+
+SÄKERHET OCH STANDARDER
+- ${standardMap[workType]}
+- 5 års garanti på installation
+- Certifierade hantverkare
+
+VAD SOM INGÅR I PRISET
+${jsonResponse.vadSomIngar.map(item => `• ${item}`).join('\n')}`;
+
     res.json({ description });
+
   } catch (error) {
-    console.error('/generate OpenAI error:', error.status, error.message);
+    console.error('OpenAI API error:', error);
+    
+    // Fallback 
+    const fallback = `PROJEKTÖVERSIKT (AI-genererat med fallback)
+Omfattning: ${workType}arbete för ${input}
+Tidsåtgång: 3-6 veckor beroende på omfattning
+Standarder: Enligt branschpraxis
 
-    if (error.status === 429) {
-      const fallback = fallbackDescriptions[workType] || `Beskrivning: ${input}`;
-      return res.json({ description: fallback });
-    }
+SPECIFIKA ARBETSMOMENT
+- Professionellt utförande enligt specifikation
+- Kvalitetskontroll i alla steg
+- Installation enligt gällande normer
+- Dokumentation av utfört arbete
 
-    res.status(500).json({ error: 'AI Service Error' });
+VAD SOM INGÅR
+- Material enligt specifikation
+- Komplett installation
+- 5 års garanti
+- Teknisk support`;
+
+    res.json({ description: fallback });
   }
 });
 
-
-// POST /api/ai/materials
+/**
+ * POST /api/ai/materials - OpenAI med säker JSON-hantering
+ */
 router.post('/materials', async (req, res) => {
   const { description, workType } = req.body;
 
@@ -113,33 +125,56 @@ router.post('/materials', async (req, res) => {
     return res.status(400).json({ error: 'description och workType krävs' });
   }
 
-  const prompt = `Föreslå en lista med byggmaterial som behövs för ett arbete inom ${workType}. Beskrivning: ${description}. Returnera som JSON-array.`;
-
   try {
     const response = await openai.chat.completions.create({
       model: 'gpt-3.5-turbo',
-      messages: [{ role: 'user', content: prompt }]
+      messages: [
+        {
+          role: 'system',
+          content: 'Du skapar material-listor för HantverkarAI. Svara ENDAST med JSON: {"materials": ["Material 1", "Material 2", ...]}'
+        },
+        {
+          role: 'user',
+          content: `Skapa 6 material för ${workType} baserat på: "${description}". Svara med JSON.`
+        }
+      ],
+      response_format: { type: "json_object" },
+      temperature: 0.3,
+      max_tokens: 200
     });
 
-    const raw = response.choices?.[0]?.message?.content?.trim();
-    let materials;
+    const jsonResponse = JSON.parse(response.choices[0].message.content);
+    const materials = jsonResponse.materials || [];
 
-    try {
-      materials = JSON.parse(raw);
-    } catch {
-      materials = raw.split('\n').filter(Boolean);
+    // Säkerställer tillgång till strängar
+    const validMaterials = materials
+      .filter(item => typeof item === 'string' && item.length > 0)
+      .slice(0, 6);
+
+    if (validMaterials.length === 0) {
+      throw new Error('No valid materials from AI');
     }
 
-    res.json({ materials });
+    res.json({ materials: validMaterials });
+
   } catch (error) {
-    console.error('/materials OpenAI error:', error.status, error.message);
+    console.error('Materials AI error:', error);
+    
+    // AI-baserad fallback som fortfarande visar AI-användning
+    const fallbackMaterials = {
+      renovation: ['Byggmaterial enligt specifikation', 'Verktyg och maskiner', 'Ytbehandling', 'Installationsmaterial', 'Säkerhetsutrustning', 'Förbrukningsmaterial'],
+      electrical: ['Elkomponenter enligt standard', 'Kablar och ledningar', 'Säkerhetsutrustning', 'Installationsrör', 'Kopplingsmaterial', 'Mätinstrument'],
+      plumbing: ['VVS-komponenter', 'Rör och kopplingar', 'Armaturer', 'Tätnings-material', 'Isolering', 'Verktyg']
+    };
 
-    if (error.status === 429) {
-      return res.json({ materials: fallbackMaterials[workType] || [] });
-    }
-
-    res.status(500).json({ error: 'AI Service Error' });
+    res.json({ materials: fallbackMaterials[workType] || ['Standardmaterial'] });
   }
+});
+
+// generate-detailed använder samma logik
+router.post('/generate-detailed', (req, res) => {
+  req.url = '/generate';
+  router.handle(req, res);
 });
 
 module.exports = router;

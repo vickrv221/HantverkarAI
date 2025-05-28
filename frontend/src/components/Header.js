@@ -1,7 +1,13 @@
 import React from 'react';
 import { NavLink } from 'react-router-dom';
 
-const Header = ({ isAuthenticated, onLogout }) => {
+/**
+ * Header-komponent med navigering för HantverkarAI
+ * @param {boolean} isAuthenticated - Om användaren är inloggad
+ * @param {Function} onLogout - Callback för utloggning
+ * @param {Function} onNewOffer - Callback för att skapa ny offert
+ */
+const Header = ({ isAuthenticated, onLogout, onNewOffer }) => {
   return (
     <header>
       <div className="container">
@@ -9,9 +15,10 @@ const Header = ({ isAuthenticated, onLogout }) => {
         <nav>
           {isAuthenticated ? (
             <>
-              <NavLink to="/new">Ny Offert</NavLink>
-              <NavLink to="/">Visa Offerter</NavLink>
-              <button onClick={onLogout}>Logga ut</button>
+              <NavLink to="/dashboard">Dashboard</NavLink>
+              <NavLink to="/offers">Offerter</NavLink>
+              <button onClick={onNewOffer} className="nav-button">Ny Offert</button>
+              <button onClick={onLogout} className="nav-button logout">Logga ut</button>
             </>
           ) : (
             <>

@@ -1,6 +1,13 @@
 const mongoose = require('mongoose');
 
 const offerSchema = new mongoose.Schema({
+  // userId för att koppla till användare
+  userId: { 
+    type: mongoose.Schema.Types.ObjectId, 
+    ref: 'User', 
+    required: true 
+  },
+  
   // Grundläggande info
   customerName: { type: String, required: true },
   workType: { type: String, required: true },

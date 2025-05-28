@@ -1,16 +1,26 @@
 import html2pdf from 'html2pdf.js';
 
+/**
+ * Genererar PDF från offertdata med professionell layout
+ * @param {Object} offerData - Offert-objektet med all nödvändig data
+ * @returns {Promise} - Promise som resolvar när PDF:en är skapad
+ */
 export const generatePDF = async (offerData) => {
  try {
+   /**
+    * Formaterar datum till svenskt format
+    */
    const formatDate = (date) => {
-     return new Date(date).toLocaleDateString();
+     return new Date(date).toLocaleDateString('sv-SE');
    };
    
+   // Generera unikt offertnummer
    const offerNumber = `${new Date().getFullYear()}-${String(Math.floor(Math.random() * 9999)).padStart(4, '0')}`;
    
+   // HTML-template för PDF-generering
    const content = `
      <div style="padding: 20px; font-family: Arial; font-size: 11px;">
-       <!-- Header -->
+       <!-- Header med företagsinformation -->
        <div style="display: flex; justify-content: space-between; margin-bottom: 20px;">
          <div>
            <h1 style="font-size: 24px; margin: 0;">OFFERT</h1>
@@ -22,12 +32,12 @@ export const generatePDF = async (offerData) => {
          </div>
        </div>
 
-       <!-- Info -->
+       <!-- Grundläggande offertinformation -->
        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 20px; margin-bottom: 20px;">
          <div>
            <p style="margin: 3px 0;"><strong>Kund:</strong> ${offerData.customerName}</p>
            <p style="margin: 3px 0;"><strong>Typ av arbete:</strong> ${offerData.workType}</p>
-           <p style="margin: 3px 0;"><strong>Datum:</strong> ${new Date().toLocaleDateString()}</p>
+           <p style="margin: 3px 0;"><strong>Datum:</strong> ${new Date().toLocaleDateString('sv-SE')}</p>
          </div>
          <div style="text-align: right;">
            <p style="margin: 3px 0;"><strong>Giltig till:</strong> ${formatDate(offerData.validUntil)}</p>
@@ -41,13 +51,13 @@ export const generatePDF = async (offerData) => {
          ${offerData.description.split('\n').map(line => `<p style="margin: 3px 0 3px 10px;">${line}</p>`).join('')}
        </div>
 
-       <!-- Material -->
+       <!-- Materialspecifikation -->
        <div style="margin-bottom: 20px;">
          <h3 style="margin: 0 0 10px 0; padding-bottom: 5px; border-bottom: 1px solid #ddd;">MATERIAL</h3>
          ${offerData.materials.split('\n').map(line => `<p style="margin: 3px 0 3px 10px;">${line}</p>`).join('')}
        </div>
 
-       <!-- Villkor -->
+       <!-- Leverans- och betalningsvillkor -->
        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 20px; margin-bottom: 20px;">
          <div>
            <h3 style="margin: 0 0 10px 0; padding-bottom: 5px; border-bottom: 1px solid #ddd;">LEVERANSVILLKOR</h3>
@@ -59,7 +69,7 @@ export const generatePDF = async (offerData) => {
          </div>
        </div>
 
-       <!-- Kostnadsspecifikation -->
+       <!-- Detaljerad kostnadsspecifikation -->
        <div style="margin-bottom: 20px;">
          <h3 style="margin: 0 0 10px 0; padding-bottom: 5px; border-bottom: 1px solid #ddd;">KOSTNADSSPECIFIKATION</h3>
          <table style="width: 100%; border-collapse: collapse;">
@@ -94,23 +104,24 @@ export const generatePDF = async (offerData) => {
          </table>
        </div>
 
-<!-- Underskrifter -->
-<div style="display: grid; grid-template-columns: 1fr 1fr; gap: 20px; margin: 20px 0;">
-  <div>
-    <p style="margin: 0 0 5px 0;"><strong>BESTÄLLARE</strong></p>
-    <p style="margin: 0 0 25px 0;">Ort och datum: <span style="display: inline-block; width: 200px; border-bottom: 1px solid black;"></span></p>
-    <p style="margin: 0 0 25px 0;">Underskrift: <span style="display: inline-block; width: 200px; border-bottom: 1px solid black;"></span></p>
-    <p style="margin: 0;">Namnförtydligande: <span style="display: inline-block; width: 200px; border-bottom: 1px solid black;"></span></p>
-  </div>
-  <div>
-    <p style="margin: 0 0 5px 0;"><strong>UTFÖRARE</strong></p>
-    <p style="margin: 0 0 25px 0;">Ort och datum: <span style="display: inline-block; width: 200px; border-bottom: 1px solid black;"></span></p>
-    <p style="margin: 0 0 25px 0;">Underskrift: <span style="display: inline-block; width: 200px; border-bottom: 1px solid black;"></span></p>
-    <p style="margin: 0;">Namnförtydligande: <span style="display: inline-block; width: 200px; border-bottom: 1px solid black;"></span></p>
-  </div>
-     </div>
+       <!-- Underskriftsfält för båda parter -->
+       <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 20px; margin: 20px 0;">
+         <div>
+           <p style="margin: 0 0 5px 0;"><strong>BESTÄLLARE</strong></p>
+           <p style="margin: 0 0 25px 0;">Ort och datum: <span style="display: inline-block; width: 200px; border-bottom: 1px solid black;"></span></p>
+           <p style="margin: 0 0 25px 0;">Underskrift: <span style="display: inline-block; width: 200px; border-bottom: 1px solid black;"></span></p>
+           <p style="margin: 0;">Namnförtydligande: <span style="display: inline-block; width: 200px; border-bottom: 1px solid black;"></span></p>
+         </div>
+         <div>
+           <p style="margin: 0 0 5px 0;"><strong>UTFÖRARE</strong></p>
+           <p style="margin: 0 0 25px 0;">Ort och datum: <span style="display: inline-block; width: 200px; border-bottom: 1px solid black;"></span></p>
+           <p style="margin: 0 0 25px 0;">Underskrift: <span style="display: inline-block; width: 200px; border-bottom: 1px solid black;"></span></p>
+           <p style="margin: 0;">Namnförtydligande: <span style="display: inline-block; width: 200px; border-bottom: 1px solid black;"></span></p>
+         </div>
+       </div>
    `;
 
+   // Konfiguration för PDF-generering
    const opt = {
      margin: 0.5,
      filename: `offert_${offerData.customerName.replace(/\s+/g, '_')}_${offerNumber}.pdf`,
@@ -119,6 +130,7 @@ export const generatePDF = async (offerData) => {
      jsPDF: { unit: 'in', format: 'a4', orientation: 'portrait' }
    };
 
+   // Generera och spara PDF
    await html2pdf().from(content).set(opt).save();
 
  } catch (error) {
