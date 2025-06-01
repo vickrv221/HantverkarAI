@@ -200,9 +200,12 @@ const OfferForm = ({ onSave, editOffer = null, onCancelEdit, companyName, setCom
   return (
     <div>
       {/* Inställningsknapp och företagsnamnsbyte */}
-      <button onClick={() => setShowSettings(s => !s)} style={{ marginBottom: '12px' }}>
-        {showSettings ? 'Stäng inställningar' : 'Företagsinställningar'}
-      </button>
+      <button 
+  onClick={() => setShowSettings(s => !s)} 
+  style={{ marginBottom: '12px', width: 'auto', maxWidth: '200px' }}
+>
+  {showSettings ? 'Stäng inställningar' : 'Företagsinställningar'}
+</button>
       {showSettings && <Settings companyName={companyName} setCompanyName={setCompanyName} />}
 
       <div style={{ marginBottom: '12px' }}>
