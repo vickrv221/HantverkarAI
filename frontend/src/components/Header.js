@@ -22,7 +22,7 @@ const Header = ({ isAuthenticated, onLogout, onNewOffer }) => {
             </>
           ) : (
             <>
-              <NavLink to="/login">Logga in</NavLink>
+              <NavLink to="/">Logga in</NavLink>
               <NavLink to="/register">Registrera</NavLink>
             </>
           )}
